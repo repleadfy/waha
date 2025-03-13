@@ -149,20 +149,30 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
 
   protected getClientOptions(): ClientOptions {
     const path = this.getClassDirName();
-    const webVersion =
-      this.engineConfig?.webVersion || '2.3000.1018072227-alpha';
+    const webVersion = this.engineConfig?.webVersion || '2.3000.1018072227-alpha';
     const cacheType = this.engineConfig?.cacheType || 'none';
     this.logger.info(`Using cache type: '${cacheType}'`);
     if (cacheType === 'local') {
       this.logger.info(`Using web version: '${webVersion}'`);
     }
-    return {
-      puppeteer: {
+
+    const puppeteerConfig: any = {
+      // if wsEndpoint is provided, use remote connection
+      ...(process.env.PUPPETEER_WS_ENDPOINT ? {
+        browserWSEndpoint: process.env.PUPPETEER_WS_ENDPOINT,
+        // when using wsEndpoint, we don't need the local executable
+        executablePath: undefined,
+      } : {
+        // default configuration for local browser
         headless: true,
         executablePath: this.getBrowserExecutablePath(),
         args: this.getBrowserArgsForPuppeteer(),
-        dumpio: this.isDebugEnabled(),
-      },
+      }),
+      dumpio: this.isDebugEnabled(),
+    };
+
+    return {
+      puppeteer: puppeteerConfig,
       webVersion: webVersion,
       webVersionCache: {
         type: cacheType,
